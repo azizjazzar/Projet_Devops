@@ -1,0 +1,28 @@
+pipeline {
+    agent any
+
+    triggers {
+        cron('H/20 * * * *') // Exécute toutes les 20 minutes
+    }
+
+    stages {
+        stage('Clean') {
+            steps {
+                // Exécute la commande Maven clean
+                script {
+                    sh 'mvn clean' // Pour les systèmes UNIX
+                    // bat 'mvn clean' // Pour les systèmes Windows, décommentez cette ligne et commentez la ligne ci-dessus
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Maven clean completed successfully!'
+        }
+        failure {
+            echo 'Maven clean failed!'
+        }
+    }
+}
