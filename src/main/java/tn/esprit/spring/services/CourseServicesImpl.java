@@ -34,4 +34,24 @@ public class CourseServicesImpl implements  ICourseServices{
     }
 
 
+
+   
+    public List<Course> recommendCoursesForUser(int userLevel) {
+        return courseRepository.findAll().stream()
+                .filter(course -> course.getLevel() <= userLevel)
+                .toList();
+    }
+
+
+
+
+    public int calculateTotalCourseHours() {
+        return courseRepository.findAll().stream()
+                .mapToInt(Course::getTimeSlot)
+                .sum();
+    }
+    
+    
+
+
 }
