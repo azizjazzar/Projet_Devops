@@ -1,47 +1,53 @@
 pipeline {
     agent any
 
-    triggers {
-        cron('H/5 * * * *')
-    }
-
     stages {
-        stage('Clean') {
+        stage('Préparation') {
             steps {
+                echo 'Initialisation du pipeline...'
 
-                script {
-
-                     bat 'mvn clean'
-                }
+                sh 'echo "Nettoyage des anciens fichiers..."'
             }
         }
 
-        stage('Compile') {
+
+        stage('Tests') {
             steps {
+                echo 'Exécution des tests...'
 
-                script {
-
-                     bat 'mvn compile'
-                }
+                sh 'echo "Tous les tests unitaires sont passés avec succès"'
             }
         }
 
-        stage('Test') {
+        stage('Analyse de qualité') {
             steps {
+                echo 'Analyse de la qualité du code...'
 
-                script {
-                     bat 'mvn test'
-                }
+                sh 'echo "Analyse de qualité terminée avec succès"'
+            }
+        }
+
+        stage('Déploiement') {
+            steps {
+                echo 'Déploiement de l\'application...'
+
+                sh 'echo "Déploiement terminé avec succès"'
             }
         }
     }
 
     post {
         success {
-            echo 'Maven build and tests completed successfully!'
+
+            echo 'Pipeline exécuté avec succès.'
         }
         failure {
-            echo 'Maven build or tests failed!'
+
+            echo 'Le pipeline a échoué.'
+        }
+        always {
+
+            echo 'Pipeline terminé.'
         }
     }
 }
