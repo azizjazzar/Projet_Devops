@@ -21,16 +21,25 @@ import lombok.experimental.FieldDefaults;
 @Entity
 public class Piste implements Serializable {
 
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	Long numPiste;
-	String namePiste;
-	@Enumerated(EnumType.STRING)
-	Color color;
-	int length;
-	int slope;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long numPiste;
+    String namePiste;
 
-	@ManyToMany(mappedBy= "pistes")
-	Set<Skier> skiers;
-	
+    @Enumerated(EnumType.STRING)
+    Color color;
+    int length;
+    int slope;
+
+    @ManyToMany(mappedBy = "pistes")
+    Set<Skier> skiers;
+
+    // Constructeur avec paramètres
+    public Piste(Long numPiste, String namePiste, Color color, int length, int slope) {
+        this.numPiste = numPiste;
+        this.namePiste = namePiste;
+        this.color = color;
+        this.length = length;
+        this.slope = slope;
+    }
 }
