@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    triggers {
+        cron('H/5 * * * *')
+    }
+
+    stages {
+        stage('Clean') {
+            steps {
+
+                script {
+
+                     bat 'mvn clean'
+                }
+            }
+        }
+
+        stage('Compile') {
+            steps {
+
+                script {
+
+                     bat 'mvn compile'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+
+                script {
+                     bat 'mvn test'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Maven build and tests completed successfully!'
+        }
+        failure {
+            echo 'Maven build or tests failed!'
+        }
+    }
+}
