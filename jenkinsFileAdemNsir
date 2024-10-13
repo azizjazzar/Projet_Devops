@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Préparation') {
+            steps {
+                echo 'Initialisation du pipeline...'
+            }
+        }
+
+        stage('Construire') {
+            steps {
+                echo 'Construire le projet...'
+              
+                sh 'echo "Construire la version de test"'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Lancer les tests...'
+               
+                sh 'echo "Tests réussis !"'
+            }
+        }
+
+        stage('Déploiement') {
+            steps {
+                echo 'Déploiement...'
+       
+                sh 'echo "Déploiement terminé avec succès !"'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline terminé.'
+        }
+    }
+}
+
