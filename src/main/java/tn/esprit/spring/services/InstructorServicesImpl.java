@@ -7,6 +7,7 @@ import tn.esprit.spring.entities.Instructor;
 import tn.esprit.spring.repositories.ICourseRepository;
 import tn.esprit.spring.repositories.IInstructorRepository;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,6 +47,25 @@ public class InstructorServicesImpl implements IInstructorServices{
         instructor.setCourses(courseSet);
         return instructorRepository.save(instructor);
     }
+// Méthode pour calculer l'ancienneté d'un instructeur
+    public int calculateInstructorSeniority(Long numInstructor) {
+        Instructor instructor = instructorRepository.findById(numInstructor).orElse(null);
+        if (instructor != null && instructor.getDateOfHire() != null) {
+            return LocalDate.now().getYear() - instructor.getDateOfHire().getYear();
+        }
+        return 0;
+    }
+
+    //Méthode pour obtenir tous les cours enseignés par un instructeur
+    public Set<Course> getCoursesTaughtByInstructor(Long numInstructor) {
+        Instructor instructor = instructorRepository.findById(numInstructor).orElse(null);
+        if (instructor != null) {
+            return instructor.getCourses();
+        }
+        return new HashSet<>();
+    }
+
+
 
 
 }

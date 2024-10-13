@@ -5,6 +5,7 @@ import tn.esprit.spring.entities.Instructor;
 import tn.esprit.spring.entities.Support;
 
 import java.util.List;
+import java.util.Set;
 
 public interface IInstructorServices {
 
@@ -17,5 +18,9 @@ public interface IInstructorServices {
     Instructor retrieveInstructor(Long numInstructor);
 
     Instructor addInstructorAndAssignToCourse(Instructor instructor, Long numCourse);
+
+    int calculateInstructorSeniority(Long numInstructor);
+
+    Set<Course> getCoursesTaughtByInstructor(Long numInstructor);
 
 }
