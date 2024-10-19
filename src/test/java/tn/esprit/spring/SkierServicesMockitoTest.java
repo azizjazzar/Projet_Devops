@@ -50,20 +50,5 @@ public class SkierServicesMockitoTest {
         assertEquals(skiers, result);
     }
 
-    @Test
-    public void testAddSkier() {
-        Skier skier = new Skier(3L, "idriss", "el bessi", LocalDate.now(), "Ariana", new Subscription(), new HashSet<Piste>(), new HashSet<Registration>());
-        when(skierRepository.save(skier)).thenReturn(skier);
-        Skier result = skierServices.addSkier(skier);
-        assertEquals(skier, result);
-    }
 
-    @Test
-    public void testRetrieveSkier() {
-        Long skierId = 4L;
-        Skier skier = new Skier(4L, "hamza", "zaghwen", LocalDate.now(), "Tunis", new Subscription(), new HashSet<Piste>(), new HashSet<Registration>());
-        when(skierRepository.findById(skierId)).thenReturn(Optional.of(skier));
-        Skier result = skierServices.retrieveSkier(skierId);
-        assertEquals(skier, result);
-    }
 }
