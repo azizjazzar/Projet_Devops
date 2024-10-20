@@ -1,14 +1,14 @@
-# Utiliser une image de base de Java
+# Étape 1 : Utiliser une image de base contenant OpenJDK
 FROM openjdk:11-jre-slim
 
-# Définir le répertoire de travail
+# Étape 2 : Définir le répertoire de travail
 WORKDIR /app
 
-# Copier le fichier JAR du projet (généré par Maven ou Gradle)
-COPY target/mon-projet.jar app.jar
+# Étape 3 : Copier le fichier JAR généré par Maven
+COPY target/gestion-station-ski-1.0.jar app.jar
 
-# Exposer le port sur lequel l'application sera accessible
-EXPOSE 9090
+# Étape 4 : Exposer le port sur lequel l'application sera accessible
+EXPOSE 8080
 
-# Commande pour démarrer l'application
+# Étape 5 : Définir la commande pour exécuter l'application
 ENTRYPOINT ["java", "-jar", "app.jar"]
