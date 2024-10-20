@@ -47,11 +47,6 @@ public class PisteRestController {
 
     // New functionalities
 
-    @Operation(description = "Retrieve pistes by minimum length and slope")
-    @GetMapping("/filter")
-    public List<Piste> getPistesByMinLengthAndMinSlope(@RequestParam int minLength, @RequestParam int minSlope) {
-        return pisteServices.findPistesByMinLengthAndMinSlope(minLength, minSlope);
-    }
 
     @Operation(description = "Get the average length of all pistes")
     @GetMapping("/average-length")

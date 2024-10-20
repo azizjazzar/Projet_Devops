@@ -16,8 +16,6 @@ public interface IPisteServices {
 
     Piste retrievePiste(Long numPiste);
 
-    List<Piste> findPistesByMinLengthAndMinSlope(int minLength, int minSlope);
-
     double getAverageLengthOfPistes();
 
     Map<Color, Long> countPistesByColor();

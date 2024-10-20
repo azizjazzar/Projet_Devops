@@ -36,13 +36,7 @@ public class PisteServicesImpl implements IPisteServices {
         return pisteRepository.findById(numPiste).orElse(null);
     }
 
-    // New methods
-    public List<Piste> findPistesByMinLengthAndMinSlope(int minLength, int minSlope) {
-        return pisteRepository.findAll().stream()
-                .filter(p -> p.getLength() >= minLength && p.getSlope() >= minSlope)
-                .collect(Collectors.toList());
-    }
-
+    // Methode pour les test unitaires
     public double getAverageLengthOfPistes() {
         return pisteRepository.findAll().stream()
                 .mapToInt(Piste::getLength)
@@ -54,4 +48,6 @@ public class PisteServicesImpl implements IPisteServices {
         return pisteRepository.findAll().stream()
                 .collect(Collectors.groupingBy(Piste::getColor, Collectors.counting()));
     }
+
+
 }
