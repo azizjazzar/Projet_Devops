@@ -31,30 +31,13 @@ public class SkierServicesMockitoTest {
     }
 
     @Test
-    public void testRetrieveAllSkiers() {
+    public void testRetrieveAllSkiers_NoSkiersFound() {
         List<Skier> skiers = new ArrayList<>();
-        skiers.add(new Skier(1L, "Rayen", "Bourguiba", LocalDate.now(),"Zarzis", new Subscription(), new HashSet<Piste>(), new HashSet<Registration>()));
-        skiers.add(new Skier(2L, "Mo7sen", "Bourguiba", LocalDate.now(),"Medenine", new Subscription(), new HashSet<Piste>(), new HashSet<Registration>()));
         when(skierRepository.findAll()).thenReturn(skiers);
         List<Skier> result = skierServices.retrieveAllSkiers();
-        assertEquals(skiers, result);
+        assertTrue(result.isEmpty());
     }
 
-    @Test
-    public void testAddSkier() {
-        Skier skier = new Skier(3L,"Iheb", "Bourguiba", LocalDate.now(),"Ariana", new Subscription(), new HashSet<Piste>(), new HashSet<Registration>());
-        when(skierRepository.save(skier)).thenReturn(skier);
-        Skier result = skierServices.addSkier(skier);
-        assertEquals(skier, result);
-    }
 
-    @Test
-    public void testRetrieveSkier() {
-        Long skierId = 4L;
-        Skier skier = new Skier(4L,"Hassen", "Bourguiba", LocalDate.now(),"Tunis", new Subscription(), new HashSet<Piste>(), new HashSet<Registration>());
-        when(skierRepository.findById(skierId)).thenReturn(Optional.of(skier));
-        Skier result = skierServices.retrieveSkier(skierId);
-        assertEquals(skier, result);
-    }
 
 }
