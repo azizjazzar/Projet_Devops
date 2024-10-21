@@ -1,14 +1,30 @@
-# Étape 1 : Utiliser une image de base contenant OpenJDK
-FROM openjdk:11-jre-slim
+# Étape 1 : Construction de l'application
+FROM maven:3.8.5-openjdk-17 AS build
 
-# Étape 2 : Définir le répertoire de travail
+# Définir le répertoire de travail
 WORKDIR /app
 
-# Étape 3 : Copier le fichier JAR généré par Maven
-COPY target/gestion-station-ski-1.0.jar app.jar
+# Copier le fichier pom.xml et le code source
+COPY pom.xml .
+COPY src ./src
 
-# Étape 4 : Exposer le port sur lequel l'application sera accessible
-EXPOSE 8080
+# Construire le JAR
+RUN mvn clean package -DskipTests
 
-# Étape 5 : Définir la commande pour exécuter l'application
+# Étape 2 : Création de l'image finale
+FROM openjdk:17-jdk-alpine
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Copier le JAR construit depuis l'étape précédente
+COPY --from=build /app/target/mon-application-0.0.1-SNAPSHOT.jar app.jar
+
+# Copier le fichier application.properties
+COPY src/main/resources/application.properties application.properties
+
+# Exposer le port sur lequel l'application va écouter
+EXPOSE 9090
+
+# Commande pour exécuter l'application
 ENTRYPOINT ["java", "-jar", "app.jar"]
