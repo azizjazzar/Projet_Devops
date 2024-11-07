@@ -21,7 +21,7 @@
     <distributionManagement>
         <repository>
             <id>deploymentRepo</id>
-            <url>http://192.168.152.128:8081/repository/maven-releases/</url>
+            <url>http://192.168.152.128:8081/repository/5SIM1-G2-SKISTATION/</url>
         </repository>
     </distributionManagement>
 

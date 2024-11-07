@@ -1,34 +1,50 @@
 pipeline {
     agent any
 
+    environment {
+        // Variables d'environnement pour Nexus
+        NEXUS_URL = 'http://192.168.152.128:8081/repository/5SIM1-G2-SKISTATION/'
+        NEXUS_CREDENTIALS_ID = 'NEXUS_CREDENTIALS_ID' // ID du credential créé dans Jenkins
+        SONARQUBE_ENV = 'sq_env' // Nom de l'environnement SonarQube dans Jenkins
+    }
+
     stages {
-        stage('Préparation') {
+        stage('GitHub Checkout') {
             steps {
-                echo 'Initialisation du pipeline...'
+                checkout scm
             }
         }
 
-        stage('Construire') {
+        stage('Build') {
             steps {
-                echo 'Construire le projet...'
-              
-                sh 'echo "Construire la version de test"'
+                sh 'mvn clean compile'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Lancer les tests...'
-               
-                sh 'echo "Tests réussis !"'
+                sh 'mvn -Dtest=CourseServicesImplTest test'
             }
         }
 
-        stage('Déploiement') {
+        stage('SonarQube Analysis') {
             steps {
-                echo 'Déploiement...'
-       
-                sh 'echo "Déploiement terminé avec succès !"'
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
+                    sh """
+                        mvn clean deploy -DskipTests \
+                            -DaltDeploymentRepository=nexus-repo::default::${NEXUS_URL} \
+                            -Dnexus.username=${NEXUS_USERNAME} \
+                            -Dnexus.password=${NEXUS_PASSWORD}
+                    """
+                }
             }
         }
     }
@@ -37,6 +53,11 @@ pipeline {
         always {
             echo 'Pipeline terminé.'
         }
+        success {
+            echo 'Pipeline réussi.'
+        }
+        failure {
+            echo 'Pipeline échoué.'
+        }
     }
 }
-
