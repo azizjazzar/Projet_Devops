@@ -5,17 +5,20 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import tn.esprit.spring.entities.*;
-import tn.esprit.spring.repositories.*;
-import tn.esprit.spring.services.*;
+import tn.esprit.spring.entities.Skier;
+import tn.esprit.spring.repositories.ICourseRepository;
+import tn.esprit.spring.repositories.IRegistrationRepository;
+import tn.esprit.spring.repositories.ISkierRepository;
+import tn.esprit.spring.services.SkierServicesImpl;
 
-import java.time.LocalDate;
-import java.util.*;
-import static org.junit.Assert.assertEquals;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 public class SkierServicesMockitoTest {
+
     @InjectMocks
     private SkierServicesImpl skierServices;
 
@@ -25,9 +28,11 @@ public class SkierServicesMockitoTest {
     private ICourseRepository courseRepository;
     @Mock
     private IRegistrationRepository registrationRepository;
+
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        // Updated mock initialization
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
@@ -37,7 +42,4 @@ public class SkierServicesMockitoTest {
         List<Skier> result = skierServices.retrieveAllSkiers();
         assertTrue(result.isEmpty());
     }
-
-
-
 }
