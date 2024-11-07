@@ -1,7 +1,7 @@
 package tn.esprit.spring;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -14,7 +14,7 @@ import tn.esprit.spring.services.SkierServicesImpl;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 public class SkierServicesMockitoTest {
@@ -29,9 +29,8 @@ public class SkierServicesMockitoTest {
     @Mock
     private IRegistrationRepository registrationRepository;
 
-    @Before
+    @BeforeEach
     public void init() {
-        // Updated mock initialization
         MockitoAnnotations.openMocks(this);
     }
 
