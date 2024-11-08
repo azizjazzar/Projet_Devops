@@ -1,36 +1,41 @@
 pipeline {
     agent any
 
+    environment {
+        SONARQUBE_ENV = 'sq_env'
+    }
+
     stages {
-        stage('Préparation') {
-            steps {
-                echo 'Initialisation du pipeline...'
 
-                sh 'echo "Nettoyage des anciens fichiers..."'
+        stage('Checkout') {
+            steps {
+                checkout scm
             }
         }
 
-
-        stage('Tests') {
+        stage('Build') {
             steps {
-                echo 'Exécution des tests...'
-
-                sh 'echo "Tous les tests unitaires sont passés avec succès"'
+                sh 'mvn clean compile'
             }
         }
 
-        stage('Analyse de qualité') {
+        stage('Test') {
             steps {
-                echo 'Analyse de la qualité du code...'
+                sh 'mvn -Dtest=InstructorServicesImplTest test'
+            }
+        }
 
-                sh 'echo "Analyse de qualité terminée avec succès"'
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh 'mvn sonar:sonar'
+                }
             }
         }
 
         stage('Déploiement') {
             steps {
                 echo 'Déploiement de l\'application...'
-
                 sh 'echo "Déploiement terminé avec succès"'
             }
         }
@@ -38,15 +43,12 @@ pipeline {
 
     post {
         success {
-
             echo 'Pipeline exécuté avec succès.'
         }
         failure {
-
             echo 'Le pipeline a échoué.'
         }
         always {
-
             echo 'Pipeline terminé.'
         }
     }
