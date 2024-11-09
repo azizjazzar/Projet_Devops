@@ -2,18 +2,14 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_ENV = 'sq_env'
-        NEXUS_URL = 'http://192.168.33.10:8081/repository/5SIM1-G2-SKISTATION/'
-        NEXUS_REGISTRY_URL = '192.168.33.10:8081'
-        NEXUS_USERNAME = 'admin'
-        NEXUS_PASSWORD = 'Raniahachem1234!'
+        NEXUS_URL = 'http://192.168.152.128:8081/repository/5SIM1-G2-SKISTATION'
         ARTIFACT_PATH = 'tn/esprit/spring/gestion-station-ski/1.0/gestion-station-ski-1.0.jar'
-        DOCKER_IMAGE_NAME = 'rania01/gestion-station-ski'
+        DOCKER_IMAGE_NAME = 'adem012/gestion-station-ski'
+        SONARQUBE_ENV = 'sq_env'
     }
 
     stages {
-
-        stage('Checkout') {
+        stage('GitHub Checkout') {
             steps {
                 checkout scm
             }
@@ -27,7 +23,7 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'mvn -Dtest=InstructorServicesImplTest test'
+                sh 'mvn -Dtest=CourseServicesImplTest test'
             }
         }
 
@@ -39,51 +35,59 @@ pipeline {
             }
         }
 
-        stage('Nexus Deploy') {
+        stage('Deploy to Nexus') {
             steps {
-                echo 'Deploying to Nexus...'
-                sh """
-                    mvn clean deploy -DskipTests \
-                    -DaltDeploymentRepository=deploymentRepo::default::${NEXUS_URL} \
-                    -Dnexus.username=${NEXUS_USERNAME} \
-                    -Dnexus.password=${NEXUS_PASSWORD}
-                """
+                withCredentials([usernamePassword(credentialsId: 'NEXUS_CREDENTIALS_ID', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
+                    sh """
+                        mvn clean deploy -DskipTests \
+                            -DaltDeploymentRepository=nexus-repo::default::${NEXUS_URL}
+                    """
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image...'
-                sh """
-                    docker build -t ${DOCKER_IMAGE_NAME}:1.0 -f /home/vagrant/projet/Dockerfile \
-                        --build-arg NEXUS_URL=${NEXUS_URL} \
-                        --build-arg NEXUS_USERNAME=${NEXUS_USERNAME} \
-                        --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} \
-                        --build-arg ARTIFACT_PATH=${ARTIFACT_PATH} .
-                """
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'NEXUS_CREDENTIALS_ID', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
+                        docker.build("${DOCKER_IMAGE_NAME}:1.0", "-f /home/vagrant/projet-ski/Dockerfile --build-arg NEXUS_URL=${NEXUS_URL} \
+                            --build-arg NEXUS_USERNAME=${NEXUS_USERNAME} \
+                            --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} \
+                            --build-arg ARTIFACT_PATH=${ARTIFACT_PATH} .")
+                    }
+                }
             }
         }
 
-        stage('Push Docker Image to Nexus') {
+        stage('Push Docker Image') {
             steps {
-                echo 'Pushing Docker image to Nexus...'
-                sh """
-                    docker tag ${DOCKER_IMAGE_NAME}:1.0 ${NEXUS_REGISTRY_URL}/${DOCKER_IMAGE_NAME}:1.0
-                    docker push ${NEXUS_REGISTRY_URL}/${DOCKER_IMAGE_NAME}:1.0
-                """
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
+                        docker.image("${DOCKER_IMAGE_NAME}:1.0").push()
+                    }
+                }
+            }
+        }
+
+        stage('Docker Compose Up') {
+            steps {
+                echo 'Starting application and MySQL using Docker Compose...'
+                sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml up -d'
             }
         }
     }
 
     post {
+        always {
+            echo 'Pipeline terminé.'
+            // Cleanup the Docker Compose containers
+            sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml down'
+        }
         success {
-            echo 'Pipeline executed successfully.'
+            echo 'Pipeline réussi.'
         }
         failure {
-            echo 'The pipeline failed.'
-        }
-        always {
-            echo 'Pipeline completed.'
+            echo 'Pipeline échoué.'
         }
     }
 }
