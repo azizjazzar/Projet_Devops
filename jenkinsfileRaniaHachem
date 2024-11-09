@@ -3,6 +3,12 @@ pipeline {
 
     environment {
         SONARQUBE_ENV = 'sq_env'
+        NEXUS_URL = 'http://192.168.33.10:8081/repository/5SIM1-G2-SKISTATION/'
+        NEXUS_REGISTRY_URL = '192.168.33.10:8081'
+        NEXUS_USERNAME = 'admin'
+        NEXUS_PASSWORD = 'Raniahachem1234!'
+        ARTIFACT_PATH = 'tn/esprit/spring/gestion-station-ski/1.0/gestion-station-ski-1.0.jar'
+        DOCKER_IMAGE_NAME = 'rania01/gestion-station-ski'
     }
 
     stages {
@@ -33,23 +39,51 @@ pipeline {
             }
         }
 
-        stage('Déploiement') {
+        stage('Nexus Deploy') {
             steps {
-                echo 'Déploiement de l\'application...'
-                sh 'echo "Déploiement terminé avec succès"'
+                echo 'Deploying to Nexus...'
+                sh """
+                    mvn clean deploy -DskipTests \
+                    -DaltDeploymentRepository=deploymentRepo::default::${NEXUS_URL} \
+                    -Dnexus.username=${NEXUS_USERNAME} \
+                    -Dnexus.password=${NEXUS_PASSWORD}
+                """
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh """
+                    docker build -t ${DOCKER_IMAGE_NAME}:1.0 -f /home/vagrant/projet/Dockerfile \
+                        --build-arg NEXUS_URL=${NEXUS_URL} \
+                        --build-arg NEXUS_USERNAME=${NEXUS_USERNAME} \
+                        --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} \
+                        --build-arg ARTIFACT_PATH=${ARTIFACT_PATH} .
+                """
+            }
+        }
+
+        stage('Push Docker Image to Nexus') {
+            steps {
+                echo 'Pushing Docker image to Nexus...'
+                sh """
+                    docker tag ${DOCKER_IMAGE_NAME}:1.0 ${NEXUS_REGISTRY_URL}/${DOCKER_IMAGE_NAME}:1.0
+                    docker push ${NEXUS_REGISTRY_URL}/${DOCKER_IMAGE_NAME}:1.0
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline exécuté avec succès.'
+            echo 'Pipeline executed successfully.'
         }
         failure {
-            echo 'Le pipeline a échoué.'
+            echo 'The pipeline failed.'
         }
         always {
-            echo 'Pipeline terminé.'
+            echo 'Pipeline completed.'
         }
     }
 }
