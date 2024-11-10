@@ -1,7 +1,9 @@
 version: "3.8"
+
 services:
   app:
     image: adem012/gestion-station-ski:1.0
+    container_name: projet-ski-app
     ports:
       - "8089:8089"
     environment:
@@ -13,9 +15,11 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     depends_on:
       - db
+    entrypoint: ["./wait-for-it.sh", "db:3306", "--", "java", "-jar", "gestion-station-ski.jar"]
 
   db:
     image: mysql:5.7
+    container_name: projet-ski-db
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=stationSki
@@ -24,5 +28,25 @@ services:
     volumes:
       - db-data:/var/lib/mysql
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
 volumes:
   db-data:
+  prometheus-data:
+  grafana-data:
