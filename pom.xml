@@ -81,14 +81,13 @@
 			<groupId>net.bytebuddy</groupId>
 			<artifactId>byte-buddy</artifactId>
 			<version>1.12.22</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.bytebuddy</groupId>
 			<artifactId>byte-buddy-agent</artifactId>
 			<version>1.12.22</version>
-			<scope>test</scope>
 		</dependency>
+
 
 		<!-- Spring Boot Test with JUnit 5 -->
 		<dependency>
