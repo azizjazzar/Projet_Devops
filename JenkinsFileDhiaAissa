@@ -1,0 +1,163 @@
+pipeline {
+    agent any
+
+    environment {
+        GIT_REPO = 'https://github.com/azizjazzar/5SIM1-G2-SKISTATION.git'
+        BRANCH = 'dhiaAissa-5SIM1-G2-SKISTATION'
+        SONAR_HOST_URL = 'http://192.168.33.10:9000'
+        SONAR_TOKEN = credentials('jenkins-sonar')
+        DOCKER_IMAGE = 'dhiaaissa15/gestion-station-ski:latest'
+        NEXUS_REPO_URL = 'http://192.168.33.10:8081/repository/maven-releases/'
+        DOCKER_TIMEOUT = '1200'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                script {
+                    git  branch: "${BRANCH}", url: "${GIT_REPO}"
+                }
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                echo 'maven build'
+                sh 'mvn clean install -Dmaven.test.skip=true'
+            }
+        }
+
+        stage('Testing with Mockito') {
+            steps {
+                echo 'maven testing'
+                sh "mvn test"
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Running SonarQube Analysis...'
+                withCredentials([string(credentialsId: 'jenkins-sonar', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                    mvn sonar:sonar \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_TOKEN} \
+                        -Dsonar.projectKey=ski \
+                        -Dsonar.projectName=ski \
+                        -Dsonar.projectVersion=0.0.1-SNAPSHOT
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                echo 'Deploying artifact to Nexus...'
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh """
+                    mvn deploy -DskipTests \
+                        -DaltDeploymentRepository=deploymentRepo::default::${NEXUS_REPO_URL} \
+                        -Dnexus.username=${NEXUS_USER} \
+                        -Dnexus.password=${NEXUS_PASS}
+                    """
+                }
+            }
+        }
+        stage('Remove Old Docker Image') {
+            steps {
+                script {
+
+                    sh 'docker rmi -f ${DOCKER_IMAGE} || true'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker Image...'
+                sh "docker build -t ${DOCKER_IMAGE} ."
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                echo 'Pushing Docker Image to Docker Hub...'
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+
+
+                        retry(3) {
+                            sh "timeout ${DOCKER_TIMEOUT}s docker push ${DOCKER_IMAGE}"
+                        }
+
+                        sh "docker logout"
+                    }
+                }
+            }
+        }
+
+        stage('Docker Compose Down') {
+            steps {
+                dir('firstpipeline') {
+                    script {
+                        // Arrête et supprime les conteneurs Docker si existants
+                        sh 'docker compose down || true'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy with Docker Compose') {
+            steps {
+                dir('firstpipeline') {
+                    script {
+                        // Déploie les services avec Docker Compose en mode détaché
+                        sh 'docker compose up -d'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Prometheus') {
+            steps {
+                echo 'Deploying Prometheus...'
+                script {
+                    sh """
+                    docker ps | grep prometheus || docker run -d --name prometheus \
+                        -p 9090:9090 \
+                        -v /path/to/your/prometheus.yml:/etc/prometheus/prometheus.yml \
+                        prom/prometheus
+                    """
+                }
+            }
+        }
+
+        stage('Deploy Grafana') {
+            steps {
+                echo 'Deploying Grafana...'
+                script {
+                    sh """
+                    docker ps | grep grafana || docker run -d --name grafana \
+                        -p 3000:3000 \
+                        -e "GF_SECURITY_ADMIN_PASSWORD=admin" \
+                        grafana/grafana
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Please check the logs.'
+        }
+    }
+}
