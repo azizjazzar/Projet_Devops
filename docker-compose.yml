@@ -2,49 +2,27 @@ version: "3.8"
 services:
   app:
     image: adem012/gestion-station-ski:1.0
-    container_name: projet-ski-ademnsir
     ports:
       - "8089:8089"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/stationSki
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=password
-      - SPRING_DATASOURCE_DRIVER-CLASS-NAME=com.mysql.cj.jdbc.Driver
-      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQL5Dialect
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQL5InnoDBDialect
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     depends_on:
       - db
 
   db:
     image: mysql:5.7
-    container_name: projet-ski-db
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: stationSki
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=stationSki
     ports:
       - "3306:3306"
     volumes:
       - db-data:/var/lib/mysql
 
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-
 volumes:
   db-data:
-  prometheus-data:
-  grafana-data:
