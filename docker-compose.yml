@@ -15,7 +15,7 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     depends_on:
       - db
-    entrypoint: ["./wait-for-it.sh", "db:3306", "--", "java", "-jar", "gestion-station-ski.jar"]
+    restart: always # restart the container until db is available
 
   db:
     image: mysql:5.7
