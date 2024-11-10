@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage('Testing with Mockito') {
+        stage('Maven Test') {
             steps {
                 echo 'maven testing'
                 sh "mvn test"
