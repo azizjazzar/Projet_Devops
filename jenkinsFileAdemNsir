@@ -76,7 +76,7 @@ pipeline {
             }
         }
 
-        stage('Prometheus Setup') {
+     stage('Prometheus Setup') {
             steps {
                 echo 'Starting Prometheus...'
                 sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml up -d prometheus'
