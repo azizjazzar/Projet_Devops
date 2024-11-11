@@ -1,0 +1,135 @@
+pipeline {
+    agent any
+
+    environment {
+        GIT_REPO = 'https://github.com/azizjazzar/5SIM1-G2-SKISTATION.git'
+        BRANCH = 'azizJAZZAR-5SIM1-G2-SKISTATION'
+        SONAR_HOST_URL = 'http://192.168.33.10:9000'
+        SONAR_TOKEN = credentials('jenkins-sonar')
+        NEXUS_REPO_URL = 'http://192.168.33.10:8081/repository/maven-releases/'
+        PROMETHEUS_URL = 'http://192.168.33.10:9090/'
+        GRAFANA_URL = 'http://192.168.33.10:3000/'
+        DOCKER_IMAGE = 'jazzaraziz994/gestion-station-ski:latest'
+        registry = "jazzaraziz994/backend" 
+        registryCredential = 'dockerhub-credentials' 
+
+        dockerImage = '' 
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                script {
+                    git credentialsId: 'jenkins-git', branch: "${BRANCH}", url: "${GIT_REPO}"
+                }
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                echo 'Maven build'
+                sh 'mvn clean install -Dmaven.test.skip=true'
+            }
+        }
+
+        stage('Run JUnit Tests') {
+            steps {
+                echo 'Running JUnit Tests...'
+                sh 'mvn -Dtest=PisteServicesImplTest test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Running SonarQube Analysis...'
+                script {
+                    sh """
+                    mvn sonar:sonar \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_TOKEN} \
+                        -Dsonar.projectKey=ski \
+                        -Dsonar.projectName=ski \
+                        -Dsonar.projectVersion=0.0.1-SNAPSHOT
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                echo 'Deploying artifact to Nexus...'
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh """
+                    mvn deploy -DskipTests \
+                        -DaltDeploymentRepository=deploymentRepo::default::${NEXUS_REPO_URL} \
+                        -Dnexus.username=${NEXUS_USER} \
+                        -Dnexus.password=${NEXUS_PASS}
+                    """
+                }
+            }
+        }
+
+       stage('Building our image') { 
+
+            steps { 
+
+                script { 
+
+                    dockerImage = docker.build registry + ":$BUILD_NUMBER" 
+
+                }
+
+            } 
+
+       } 
+         stage('Deploy our image') { 
+
+           steps { 
+
+                script { 
+
+                    docker.withRegistry( '', registryCredential ) { 
+
+                        dockerImage.push() 
+
+                  }
+
+               } 
+
+            }
+
+       }
+
+        stage('Setup Prometheus and Grafana') {
+            steps {
+                script {
+                    // Check if Prometheus is running by querying the Prometheus API
+                    sh "curl ${PROMETHEUS_URL}/api/v1/query?query=up"
+
+                    // Setup Grafana: Login to Grafana and configure the data source for Prometheus
+                    sh """
+                        curl -X POST -H "Content-Type: application/json" \
+                        -d '{
+                            "name":"Prometheus",
+                            "type":"prometheus",
+                            "url":"${PROMETHEUS_URL}",
+                            "access":"proxy"
+                        }' ${GRAFANA_URL}/api/datasources
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Please check the logs.'
+        }
+    }
+}
