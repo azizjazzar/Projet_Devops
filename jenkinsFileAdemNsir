@@ -75,17 +75,20 @@ pipeline {
                 sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml up -d'
             }
         }
-  stage('Prometheus Setup') {
-                                                         steps {
-                                                             sh 'docker compose up -d prometheus'
-                                                         }
-                                                     }
-                                             stage('Grafana Setup') {
-                                                         steps {
-                                                             sh 'docker compose up -d grafana'
-                                                         }
-                                                     }
 
+        stage('Prometheus Setup') {
+            steps {
+                echo 'Starting Prometheus...'
+                sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml up -d prometheus'
+            }
+        }
+
+        stage('Grafana Setup') {
+            steps {
+                echo 'Starting Grafana...'
+                sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml up -d grafana'
+            }
+        }
     }
 
     post {
