@@ -5,14 +5,11 @@ pipeline {
         SONARQUBE_ENV = 'sq_env'
         NEXUS_URL = 'http://192.168.33.10:8081/repository/5SIM1-G2-SKISTATION/'
         NEXUS_REGISTRY_URL = '192.168.33.10:8081'
-        NEXUS_USERNAME = 'admin'
-        NEXUS_PASSWORD = 'Raniahachem1234!'
         ARTIFACT_PATH = 'tn/esprit/spring/gestion-station-ski/1.0/gestion-station-ski-1.0.jar'
         DOCKER_IMAGE_NAME = 'rania01/gestion-station-ski'
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -42,46 +39,100 @@ pipeline {
         stage('Nexus Deploy') {
             steps {
                 echo 'Deploying to Nexus...'
-                sh """
-                    mvn clean deploy -DskipTests \
-                    -DaltDeploymentRepository=deploymentRepo::default::${NEXUS_URL} \
-                    -Dnexus.username=${NEXUS_USERNAME} \
-                    -Dnexus.password=${NEXUS_PASSWORD}
-                """
+                withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
+                    sh """
+                        mvn clean deploy -DskipTests \
+                        -DaltDeploymentRepository=deploymentRepo::default::${NEXUS_URL} \
+                        -Dnexus.username=${NEXUS_USERNAME} \
+                        -Dnexus.password=${NEXUS_PASSWORD}
+                    """
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                sh """
-                    docker build -t ${DOCKER_IMAGE_NAME}:1.0 -f /home/vagrant/projet/Dockerfile \
-                        --build-arg NEXUS_URL=${NEXUS_URL} \
-                        --build-arg NEXUS_USERNAME=${NEXUS_USERNAME} \
-                        --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} \
-                        --build-arg ARTIFACT_PATH=${ARTIFACT_PATH} .
-                """
+                withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
+                    sh """
+                        docker build -t ${DOCKER_IMAGE_NAME}:1.0 -f /home/vagrant/projet/Dockerfile \
+                            --build-arg NEXUS_URL=${NEXUS_URL} \
+                            --build-arg NEXUS_USERNAME=${NEXUS_USERNAME} \
+                            --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} \
+                            --build-arg ARTIFACT_PATH=${ARTIFACT_PATH} .
+                    """
+                }
             }
         }
 
-        stage('Push Docker Image to Nexus') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
-                echo 'Pushing Docker image to Nexus...'
-                sh """
-                    docker tag ${DOCKER_IMAGE_NAME}:1.0 ${NEXUS_REGISTRY_URL}/${DOCKER_IMAGE_NAME}:1.0
-                    docker push ${NEXUS_REGISTRY_URL}/${DOCKER_IMAGE_NAME}:1.0
-                """
+                echo 'Logging into Docker Hub and pushing the image...'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                    sh """
+                        echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin
+                        docker tag ${DOCKER_IMAGE_NAME}:1.0 ${DOCKER_IMAGE_NAME}:1.0
+                        docker push ${DOCKER_IMAGE_NAME}:1.0
+                        docker logout
+                    """
+                }
+            }
+        }
+
+        stage('Docker Compose Stage') {
+            steps {
+                sh 'docker-compose -f /home/vagrant/projet/docker-compose.yml up -d'
+            }
+        }
+
+        stage('Prometheus and Grafana Setup') {
+            steps {
+                script {
+                    def prometheusRunning = sh(script: "docker ps | grep prometheus", returnStatus: true) == 0
+                    def grafanaRunning = sh(script: "docker ps | grep grafana", returnStatus: true) == 0
+
+                    if (!prometheusRunning) {
+                        sh 'docker-compose -f /home/vagrant/projet/docker-compose.yml up -d prometheus'
+                    } else {
+                        echo 'Prometheus is already running.'
+                    }
+
+                    if (!grafanaRunning) {
+                        sh 'docker-compose -f /home/vagrant/projet/docker-compose.yml up -d grafana'
+                    } else {
+                        echo 'Grafana is already running.'
+                    }
+                }
             }
         }
     }
 
-    post {
-        success {
-            echo 'Pipeline executed successfully.'
-        }
-        failure {
-            echo 'The pipeline failed.'
-        }
+   post {
+    success {
+        emailext(
+            attachLog: true,
+            compressLog: true,
+            to: 'raniahachem4444@gmail.com',
+            subject: 'Pipeline Success: Gestion-Station-Ski',
+            mimeType: 'text/html',
+            body: """<p><strong>Succès :</strong> Le pipeline <strong>Gestion-Station-Ski</strong> a été exécuté avec succès.</p>
+                     <p>Les étapes se sont déroulées sans erreurs.</p>
+                     <p>Veuillez trouver les logs d'exécution en pièce jointe pour plus de détails.</p>"""
+        )
+    }
+    failure {
+        emailext(
+            attachLog: true,
+            compressLog: true,
+            to: 'raniahachem4444@gmail.com',
+            subject: 'Pipeline Failure: Gestion-Station-Ski',
+            mimeType: 'text/html',
+            body: """<p><strong>Échec :</strong> Le pipeline <strong>Gestion-Station-Ski</strong> a rencontré une erreur.</p>
+                     <p>Veuillez vérifier les logs en pièce jointe pour plus de détails sur l'erreur.</p>
+                     <p>Étape ayant échoué : ${currentBuild.currentResult}</p>"""
+        )
+    }
+
         always {
             echo 'Pipeline completed.'
         }
