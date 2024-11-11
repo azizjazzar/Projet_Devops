@@ -69,20 +69,43 @@ pipeline {
             }
         }
 
-
+        stage('Docker Compose Up') {
+            steps {
+                echo 'Starting application and MySQL using Docker Compose...'
+                sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml up -d'
+            }
+        }
     }
 
     post {
         always {
             echo 'Pipeline terminé.'
-            // Cleanup the Docker Compose containers
-            sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml down'
         }
         success {
             echo 'Pipeline réussi.'
+
+        
+            mail to: 'adem.nssir@gmail.com',
+                subject: "Pipeline Succeeded: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                body: """
+                    The Jenkins pipeline for job '${env.JOB_NAME}' has successfully completed.
+                    
+                    You can check the details here: ${env.BUILD_URL}
+                """
         }
         failure {
             echo 'Pipeline échoué.'
+
+            
+            mail to: 'adem.nssir@gmail.com',
+                subject: "Pipeline Failed: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                body: """
+                    The Jenkins pipeline for job '${env.JOB_NAME}' has failed on stage: ${currentBuild.currentResult}.
+                    
+                    Error occurred in stage: ${env.STAGE_NAME}
+                    
+                    For more details, check the Jenkins build log here: ${env.BUILD_URL}
+                """
         }
     }
 }
