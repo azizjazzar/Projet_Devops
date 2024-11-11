@@ -70,12 +70,6 @@ pipeline {
         }
 
 
-        stage('Grafana Setup') {
-            steps {
-                echo 'Starting Grafana...'
-                sh 'docker-compose -f /home/vagrant/projet-ski/docker-compose.yml up -d grafana'
-            }
-        }
     }
 
     post {
